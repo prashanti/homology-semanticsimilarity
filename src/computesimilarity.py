@@ -2,7 +2,6 @@ def getsimilarity(profile1,profile2,termic,ancestors):
 	
 	finalmaxic=0
 	finallcs="None"
-	
 	for term1 in profile1:
 		for term2 in profile2:
 			commonancestors=set.intersection(ancestors[term1],ancestors[term2])
@@ -55,8 +54,8 @@ def getsimilarityold(profile1,profile2,termic,ancestors,termtermsimilarity,termt
 	return max(icscores),termtermsimilarity
 
 
-def loadhomology():
-	parentshomology=open("../ParentsWithHomology.txt")
+def loadancestors():
+	parentshomology=open("../data/ParentsWithHomology.txt")
 	ancestors=dict()
 	for line in parentshomology:
 		data=line.replace("<http://purl.obolibrary.org/obo/","").replace(">","").split("\t")
@@ -66,13 +65,9 @@ def loadhomology():
 			ancestors[child]=set()
 		if "WithHomology" in parent:
 			ancestors[child].add(parent)
-	return ancestors
-	parentshomology.close()
 
-
-def loadnohomology():
-	parentsnohomology=open("../ParentsWithoutHomology.txt")
-	ancestors=dict()
+	parentsnohomology=open("../data/ParentsWithoutHomology.txt")
+	
 	for line in parentsnohomology:
 		data=line.replace("<http://purl.obolibrary.org/obo/","").replace(">","").split("\t")
 		child=data[0].strip()
@@ -82,10 +77,12 @@ def loadnohomology():
 		if "Withouthomology" in parent:
 			ancestors[child].add(parent)
 	parentsnohomology.close()
+	parentshomology.close()
 	return ancestors
 
+
 def getorthologpairs(geneset):
-	datafile=open("./data/gene-orthologs.txt",'r')
+	datafile=open("../data/gene-orthologs.txt",'r')
 	orthologpairs=[]
 	for line in datafile:
 		#ensembl:ENSG00000005007	PomBase:SPAC16C9.06c
@@ -100,22 +97,21 @@ def getorthologpairs(geneset):
 def prepareCorpusforIC(ancestors):
 	geneset=set()
 	annotationgenecount=dict()
-	annotationset=set()
+	termic=dict()
+	
 	geneannotations=dict()
-	annotationfile=open("./data/AnnotationCorpus.txt")
-	outfile=open("./data/AnnotationDataset.txt",'w')
+	annotationfile=open("../data/AnnotationCorpus.txt")
+	outfile=open("../data/GeneAnnotationDataset.txt",'w')
 	for line in annotationfile:
 		data=line.split("\t")
 		gene=data[0].strip()
 		geneset.add(gene)
 		annotation=data[1].strip().replace(":","_")
-		annotationset.add(annotation)
 		if gene not in geneannotations:
 			geneannotations[gene]=set()
-		geneannotations[gene].add(annotation)
+		#geneannotations[gene].add(annotation)
 		for anc in ancestors[annotation]:
 			geneannotations[gene].add(anc)
-			annotationset.add(anc)
 	
 	for gene in geneannotations:
 		for annotation in geneannotations[gene]:
@@ -123,13 +119,21 @@ def prepareCorpusforIC(ancestors):
 				annotationgenecount[annotation]=0
 			annotationgenecount[annotation]+=1
 		outfile.write(gene+"\t"+(",".join(geneannotations[gene]))+"\n")
+
+
+	geneoutfile=open("../data/annotationgenecounts.txt",'w')
+	for annotation in annotationgenecount:
+		geneoutfile.write(annotation+"\t"+str(annotationgenecount[annotation])+"\n")	
+		termic[annotation]=-math.log(float(annotationgenecount[annotation])/float(len(geneset)))
+			
+	geneoutfile.close()
 	outfile.close()
-	annotationfile.close()
-	return geneset,annotationgenecount
+	annotationfile.close()	
+	return geneset,termic
 
 def loadzfinprofiles():
 	zfinprofiles=dict()
-	zfin=open("./data/Danio_rerio/Dr-gene-to-phenotype-BF.txt",'r')
+	zfin=open("../data/Dr-gene-to-phenotype-BF.txt",'r')
 	for line in zfin:
 		gene=line.split("\t")[0].strip()
 		annotation=line.split("\t")[1].strip().replace(":","_")
@@ -142,7 +146,7 @@ def loadzfinprofiles():
 def loadmgiprofiles():
 	mgiprofiles=dict()
 
-	mgi=open("./data/Mus_musculus/Mm-gene-to-phenotype-BF.txt",'r')		
+	mgi=open("../data/Mm-gene-to-phenotype-BF.txt",'r')		
 	for line in mgi:
 		gene=line.split("\t")[0].strip()
 		annotation=line.split("\t")[1].strip().replace(":","_")
@@ -157,26 +161,11 @@ def main():
 	
 	
 	ancestors=dict()
-	termic=dict()
 	genegenelcs=dict()
-	ancestors=loadhomology()
-	#ancestors=loadnohomology()
 
-	geneset,annotationgenecount=prepareCorpusforIC(ancestors)
-	geneoutfile=open("annotationgenecounts.txt",'w')
-
-	
-	
+	ancestors=loadancestors()
+	geneset,termic=prepareCorpusforIC(ancestors)
 	orthologpairs=getorthologpairs(geneset)
-
-	for annotation in annotationgenecount:
-		geneoutfile.write(annotation+"\t"+str(annotationgenecount[annotation])+"\n")	
-		termic[annotation]=-math.log(float(annotationgenecount[annotation])/float(len(geneset)))
-			
-	geneoutfile.close()
-
-
-	
 	#build profiles of genes
 	mgiprofiles=loadmgiprofiles()
 	zfinprofiles=loadzfinprofiles()
