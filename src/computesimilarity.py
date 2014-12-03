@@ -1,4 +1,4 @@
-def getsimilarity(profile1,profile2,termic,ancestors):
+def getsimilarity(profile1,profile2,termic,ancestors,homologyflag):
 	
 	finalmaxic=0
 	finallcs="None"
@@ -6,9 +6,16 @@ def getsimilarity(profile1,profile2,termic,ancestors):
 		for term2 in profile2:
 			commonancestors=set.intersection(ancestors[term1],ancestors[term2])
 			for anc in commonancestors:
-				if termic[anc]>finalmaxic:
-					finalmaxic=termic[anc]
-					finallcs=anc	
+				if homologyflag ==1:
+					if "WithHomology" in anc:
+						if termic[anc]>finalmaxic:
+							finalmaxic=termic[anc]
+							finallcs=anc
+				else:
+					if "Withouthomology" in anc:
+						if termic[anc]>finalmaxic:
+							finalmaxic=termic[anc]
+							finallcs=anc	
 
 	return finalmaxic,finallcs
 
@@ -78,6 +85,7 @@ def loadancestors():
 			ancestors[child].add(parent)
 	parentsnohomology.close()
 	parentshomology.close()
+
 	return ancestors
 
 
@@ -85,7 +93,6 @@ def getorthologpairs(geneset):
 	datafile=open("../data/gene-orthologs.txt",'r')
 	orthologpairs=[]
 	for line in datafile:
-		#ensembl:ENSG00000005007	PomBase:SPAC16C9.06c
 		line=line.replace("NCBIGene_","NCBI_gene:")
 		gene1=line.split("\t")[0]
 		gene2=line.split("\t")[1].strip()
@@ -109,7 +116,6 @@ def prepareCorpusforIC(ancestors):
 		annotation=data[1].strip().replace(":","_")
 		if gene not in geneannotations:
 			geneannotations[gene]=set()
-		#geneannotations[gene].add(annotation)
 		for anc in ancestors[annotation]:
 			geneannotations[gene].add(anc)
 	
@@ -159,7 +165,8 @@ def loadmgiprofiles():
 def main():
 	
 	
-	
+	outfile=open("../results/SimilarityScores.txt",'w')
+	outfile.write("Gene1\tGene2\tSimilarity With Homology\tSimilarity Without Homology\n")
 	ancestors=dict()
 	genegenelcs=dict()
 
@@ -170,25 +177,31 @@ def main():
 	mgiprofiles=loadmgiprofiles()
 	zfinprofiles=loadzfinprofiles()
 
-	genegenesimilarity=dict()
+	similaritywithhomology=dict()
+	similaritywithouthomology=dict()
 	termtermsimilarity=dict()
 
 	for orthologpair in orthologpairs:
 		gene1=orthologpair[0]
 		gene2=orthologpair[1]
 	
-		if gene1 not in genegenesimilarity:
-			genegenesimilarity[gene1]=dict()
+		if gene1 not in similaritywithhomology:
+			similaritywithhomology[gene1]=dict()
+		if gene1 not in similaritywithouthomology:
+			similaritywithouthomology[gene1]=dict()
 		if gene1 not in genegenelcs:
 			genegenelcs[gene1]=dict()
 
-		ic,lcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestors)
+		withhomologyic,lcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestors,1)
 		genegenelcs[gene1][gene2]=lcs
-		genegenesimilarity[gene1][gene2]=ic
-		
-	for gene1 in genegenesimilarity:
-		for gene2 in genegenesimilarity[gene1]:
-			print gene1+"\t"+gene2+"\t"+str(genegenesimilarity[gene1][gene2])+"\t"+genegenelcs[gene1][gene2]
+		similaritywithhomology[gene1][gene2]= withhomologyic
+
+		withouthomologyic,lcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestors,0)
+		similaritywithouthomology[gene1][gene2]= withouthomologyic		
+
+	for gene1 in similaritywithhomology:
+		for gene2 in similaritywithhomology[gene1]:
+			outfile.write(gene1+"\t"+gene2+"\t"+str(similaritywithhomology[gene1][gene2])+"\t"+str(similaritywithouthomology[gene1][gene2])+"\n")
 
 
 
