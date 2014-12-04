@@ -1,22 +1,15 @@
-def getsimilarity(profile1,profile2,termic,ancestors,homologyflag):
+def getsimilarity(profile1,profile2,termic,ancestors):
 	
 	finalmaxic=0
 	finallcs="None"
 	for term1 in profile1:
 		for term2 in profile2:
 			commonancestors=set.intersection(ancestors[term1],ancestors[term2])
-			for anc in commonancestors:
-				if homologyflag ==1:
-					if "WithHomology" in anc:
-						if termic[anc]>finalmaxic:
-							finalmaxic=termic[anc]
-							finallcs=anc
-				else:
-					if "Withouthomology" in anc:
-						if termic[anc]>finalmaxic:
-							finalmaxic=termic[anc]
-							finallcs=anc	
-
+			for anc in commonancestors:	
+				if termic[anc]>finalmaxic:
+					finalmaxic=termic[anc]
+					finallcs=anc
+		
 	return finalmaxic,finallcs
 
 
@@ -63,15 +56,17 @@ def getsimilarityold(profile1,profile2,termic,ancestors,termtermsimilarity,termt
 
 def loadancestors():
 	parentshomology=open("../data/ParentsWithHomology.txt")
-	ancestors=dict()
+	ancestorswith=dict()
+	ancestorswithout=dict()
+
 	for line in parentshomology:
 		data=line.replace("<http://purl.obolibrary.org/obo/","").replace(">","").split("\t")
 		child=data[0].strip()
 		parent=data[1].strip()
-		if child not in ancestors:
-			ancestors[child]=set()
-		if "WithHomology" in parent:
-			ancestors[child].add(parent)
+		if child not in ancestorswith:
+			ancestorswith[child]=set()
+		if "With" in parent:
+			ancestorswith[child].add(parent)
 
 	parentsnohomology=open("../data/ParentsWithoutHomology.txt")
 	
@@ -79,14 +74,15 @@ def loadancestors():
 		data=line.replace("<http://purl.obolibrary.org/obo/","").replace(">","").split("\t")
 		child=data[0].strip()
 		parent=data[1].strip()
-		if child not in ancestors:
-			ancestors[child]=set()
-		if "Withouthomology" in parent:
-			ancestors[child].add(parent)
+		if child not in ancestorswithout:
+			ancestorswithout[child]=set()
+		if "With" in parent:
+			print parent
+			ancestorswithout[child].add(parent)
 	parentsnohomology.close()
 	parentshomology.close()
 
-	return ancestors
+	return ancestorswith,ancestorswithout
 
 
 def getorthologpairs(geneset):
@@ -101,7 +97,7 @@ def getorthologpairs(geneset):
 			orthologpairs.append(temp)
 	return orthologpairs
 
-def prepareCorpusforIC(ancestors):
+def prepareCorpusforIC(ancestorswith,ancestorswithout):
 	geneset=set()
 	annotationgenecount=dict()
 	termic=dict()
@@ -116,9 +112,12 @@ def prepareCorpusforIC(ancestors):
 		annotation=data[1].strip().replace(":","_")
 		if gene not in geneannotations:
 			geneannotations[gene]=set()
-		for anc in ancestors[annotation]:
+		for anc in ancestorswith[annotation]:
 			geneannotations[gene].add(anc)
-	
+		for anc in ancestorswithout[annotation]:
+			geneannotations[gene].add(anc)
+
+
 	for gene in geneannotations:
 		for annotation in geneannotations[gene]:
 			if annotation not in annotationgenecount:
@@ -166,12 +165,12 @@ def main():
 	
 	
 	outfile=open("../results/SimilarityScores.txt",'w')
-	outfile.write("Gene1\tGene2\tSimilarity With Homology\tSimilarity Without Homology\n")
-	ancestors=dict()
+	outfile.write("Gene1\tGene2\tSimilarity With Homology\tLCS With Homology\tSimilarity Without Homology\tLCS Without Homology\n")
+	
 	genegenelcs=dict()
 
-	ancestors=loadancestors()
-	geneset,termic=prepareCorpusforIC(ancestors)
+	ancestorswith,ancestorswithout=loadancestors()
+	geneset,termic=prepareCorpusforIC(ancestorswith,ancestorswithout)
 	orthologpairs=getorthologpairs(geneset)
 	#build profiles of genes
 	mgiprofiles=loadmgiprofiles()
@@ -179,6 +178,10 @@ def main():
 
 	similaritywithhomology=dict()
 	similaritywithouthomology=dict()
+
+	lcswithhomology=dict()
+	lcswithouthomology=dict()
+
 	termtermsimilarity=dict()
 
 	for orthologpair in orthologpairs:
@@ -189,19 +192,26 @@ def main():
 			similaritywithhomology[gene1]=dict()
 		if gene1 not in similaritywithouthomology:
 			similaritywithouthomology[gene1]=dict()
-		if gene1 not in genegenelcs:
-			genegenelcs[gene1]=dict()
+	
+		if gene1 not in lcswithhomology:
+			lcswithhomology[gene1]=dict()
+		if gene1 not in lcswithouthomology:
+			lcswithouthomology[gene1]=dict()
 
-		withhomologyic,lcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestors,1)
-		genegenelcs[gene1][gene2]=lcs
+
+
+
+		withhomologyic,withhomologylcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswith)
+		lcswithhomology[gene1][gene2]=withhomologylcs
 		similaritywithhomology[gene1][gene2]= withhomologyic
 
-		withouthomologyic,lcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestors,0)
+		withouthomologyic,withouthomologylcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswithout)
+		lcswithouthomology[gene1][gene2]=withouthomologylcs
 		similaritywithouthomology[gene1][gene2]= withouthomologyic		
 
 	for gene1 in similaritywithhomology:
 		for gene2 in similaritywithhomology[gene1]:
-			outfile.write(gene1+"\t"+gene2+"\t"+str(similaritywithhomology[gene1][gene2])+"\t"+str(similaritywithouthomology[gene1][gene2])+"\n")
+			outfile.write(gene1+"\t"+gene2+"\t"+str(similaritywithhomology[gene1][gene2])+"\t"+lcswithhomology[gene1][gene2]+ "\t"+str(similaritywithouthomology[gene1][gene2])+ "\t"+lcswithouthomology[gene1][gene2]+"\n")
 
 
 
