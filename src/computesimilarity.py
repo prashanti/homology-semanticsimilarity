@@ -2,6 +2,8 @@ def getsimilarity(profile1,profile2,termic,ancestors):
 	
 	finalmaxic=0
 	finallcs="None"
+	lcsset=set()
+	comparing=""
 	for term1 in profile1:
 		for term2 in profile2:
 			commonancestors=set.intersection(ancestors[term1],ancestors[term2])
@@ -9,8 +11,9 @@ def getsimilarity(profile1,profile2,termic,ancestors):
 				if termic[anc]>finalmaxic:
 					finalmaxic=termic[anc]
 					finallcs=anc
-		
-	return finalmaxic,finallcs
+					lcsset = deepcopy(commonancestors)
+					comparing=term1+"--"+term2
+	return finalmaxic,finallcs,lcsset,comparing
 
 
 
@@ -76,8 +79,7 @@ def loadancestors():
 		parent=data[1].strip()
 		if child not in ancestorswithout:
 			ancestorswithout[child]=set()
-		if "With" in parent:
-			print parent
+		if "Without" in parent:
 			ancestorswithout[child].add(parent)
 	parentsnohomology.close()
 	parentshomology.close()
@@ -129,7 +131,7 @@ def prepareCorpusforIC(ancestorswith,ancestorswithout):
 	geneoutfile=open("../data/annotationgenecounts.txt",'w')
 	for annotation in annotationgenecount:
 		geneoutfile.write(annotation+"\t"+str(annotationgenecount[annotation])+"\n")	
-		termic[annotation]=-math.log(float(annotationgenecount[annotation])/float(len(geneset)))
+		termic[annotation]=round(-math.log(float(annotationgenecount[annotation])/float(len(geneset))),2)
 			
 	geneoutfile.close()
 	outfile.close()
@@ -165,7 +167,7 @@ def main():
 	
 	
 	outfile=open("../results/SimilarityScores.txt",'w')
-	outfile.write("Gene1\tGene2\tSimilarity With Homology\tLCS With Homology\tSimilarity Without Homology\tLCS Without Homology\n")
+	outfile.write("Gene1\tGene2\tBetter Similarity With Homology\tSimilarity With Homology\tLCS With Homology\tAnnotation Pair leading to best match\tCommon subsumer set\tSimilarity Without Homology\tLCS Without Homology\tAnnotation Pair leading to best match\tCommon subsumer set\t\n")
 	
 	genegenelcs=dict()
 
@@ -181,6 +183,10 @@ def main():
 
 	lcswithhomology=dict()
 	lcswithouthomology=dict()
+	lcssetwithhomology=dict()
+	lcssetwithouthomology=dict()
+	comparingwithhomology=dict()
+	comparingwithouthomology=dict()
 
 	termtermsimilarity=dict()
 
@@ -198,20 +204,44 @@ def main():
 		if gene1 not in lcswithouthomology:
 			lcswithouthomology[gene1]=dict()
 
+		if gene1 not in lcssetwithouthomology:
+			lcssetwithouthomology[gene1]=dict()
+		if gene1 not in comparingwithouthomology:
+			comparingwithouthomology[gene1]=dict()
+		
+		if gene1 not in lcssetwithhomology:
+			lcssetwithhomology[gene1]=dict()
+		if gene1 not in comparingwithhomology:
+			comparingwithhomology[gene1]=dict()
 
 
+		withhomologyic,withhomologylcs,withhomologylcsset,withhomologycomparing=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswith)
 
-		withhomologyic,withhomologylcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswith)
 		lcswithhomology[gene1][gene2]=withhomologylcs
 		similaritywithhomology[gene1][gene2]= withhomologyic
+		lcssetwithhomology[gene1][gene2]=withhomologylcsset
+		comparingwithhomology[gene1][gene2]=withhomologycomparing
 
-		withouthomologyic,withouthomologylcs=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswithout)
+
+
+		withouthomologyic,withouthomologylcs,withhomologylcsset,withhomologycomparing=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswithout)
 		lcswithouthomology[gene1][gene2]=withouthomologylcs
-		similaritywithouthomology[gene1][gene2]= withouthomologyic		
+		similaritywithouthomology[gene1][gene2]= withouthomologyic	
+		lcssetwithouthomology[gene1][gene2]=withhomologylcsset
+		comparingwithouthomology[gene1][gene2]=withhomologycomparing	
+
+
 
 	for gene1 in similaritywithhomology:
 		for gene2 in similaritywithhomology[gene1]:
-			outfile.write(gene1+"\t"+gene2+"\t"+str(similaritywithhomology[gene1][gene2])+"\t"+lcswithhomology[gene1][gene2]+ "\t"+str(similaritywithouthomology[gene1][gene2])+ "\t"+lcswithouthomology[gene1][gene2]+"\n")
+			lcsstringwith=','.join(lcssetwithhomology[gene1][gene2])
+			lcsstringwithout=','.join(lcssetwithouthomology[gene1][gene2])
+			better=0
+			if similaritywithhomology[gene1][gene2] > similaritywithouthomology[gene1][gene2]:
+				better=1
+
+
+			outfile.write(gene1+"\t"+gene2+"\t"+ str(better)+"\t"+str(similaritywithhomology[gene1][gene2])+"\t"+lcswithhomology[gene1][gene2]+ "\t" + comparingwithhomology[gene1][gene2]+"\t"+    lcsstringwith+"\t"+str(similaritywithouthomology[gene1][gene2])+ "\t"+lcswithouthomology[gene1][gene2]+ "\t"+comparingwithouthomology[gene1][gene2]+"\t"+lcsstringwithout+"\n")
 
 
 
@@ -220,6 +250,7 @@ def main():
 
 
 if __name__ == "__main__":
+	from copy import deepcopy 
 	import math
 	import sys
 	main()
