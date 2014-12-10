@@ -1,5 +1,5 @@
 ## Experiment 2
->Goal -- Observe if the addition of WithHomology grouping classes improve the similarity scores of any orthologies gene pair comparisons.
+
 
 >Grouping Classes added to the ontology : 
   * Without Homology grouping classes
