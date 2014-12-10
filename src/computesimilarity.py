@@ -57,8 +57,8 @@ def getsimilarityold(profile1,profile2,termic,ancestors,termtermsimilarity,termt
 	return max(icscores),termtermsimilarity
 
 
-def loadancestors():
-	parentshomology=open("../data/ParentsWithHomology.txt")
+def loadancestors(experimentno):
+	parentshomology=open("../data/"+experimentno+"/ParentsWithHomology.txt")
 	ancestorswith=dict()
 	ancestorswithout=dict()
 
@@ -71,7 +71,7 @@ def loadancestors():
 		if "With" in parent:
 			ancestorswith[child].add(parent)
 
-	parentsnohomology=open("../data/ParentsWithoutHomology.txt")
+	parentsnohomology=open("../data/"+experimentno+"/ParentsWithoutHomology.txt")
 	
 	for line in parentsnohomology:
 		data=line.replace("<http://purl.obolibrary.org/obo/","").replace(">","").split("\t")
@@ -165,13 +165,13 @@ def loadmgiprofiles():
 
 def main():
 	
-	
-	outfile=open("../results/SimilarityScores.txt",'w')
+	experimentno=sys.argv[1]
+	outfile=open("../results/"+experimentno+"/SimilarityScores.tsv",'w')
 	outfile.write("Gene1\tGene2\tBetter Similarity With Homology\tSimilarity With Homology\tLCS With Homology\tAnnotation Pair leading to best match\tCommon subsumer set\tSimilarity Without Homology\tLCS Without Homology\tAnnotation Pair leading to best match\tCommon subsumer set\t\n")
 	
 	genegenelcs=dict()
 
-	ancestorswith,ancestorswithout=loadancestors()
+	ancestorswith,ancestorswithout=loadancestors(experimentno)
 	geneset,termic=prepareCorpusforIC(ancestorswith,ancestorswithout)
 	orthologpairs=getorthologpairs(geneset)
 	#build profiles of genes
@@ -231,7 +231,9 @@ def main():
 		comparingwithouthomology[gene1][gene2]=withhomologycomparing	
 
 
-
+	same=0
+	with_greater=0
+	without_greater=0
 	for gene1 in similaritywithhomology:
 		for gene2 in similaritywithhomology[gene1]:
 			lcsstringwith=','.join(lcssetwithhomology[gene1][gene2])
@@ -239,9 +241,15 @@ def main():
 			better=0
 			if similaritywithhomology[gene1][gene2] > similaritywithouthomology[gene1][gene2]:
 				better=1
-
-
+				with_greater+=1
+			if similaritywithhomology[gene1][gene2] < similaritywithouthomology[gene1][gene2]:
+				better=-1
+				without_greater+=1 
+			if better==0:
+				same+=1	
 			outfile.write(gene1+"\t"+gene2+"\t"+ str(better)+"\t"+str(similaritywithhomology[gene1][gene2])+"\t"+lcswithhomology[gene1][gene2]+ "\t" + comparingwithhomology[gene1][gene2]+"\t"+    lcsstringwith+"\t"+str(similaritywithouthomology[gene1][gene2])+ "\t"+lcswithouthomology[gene1][gene2]+ "\t"+comparingwithouthomology[gene1][gene2]+"\t"+lcsstringwithout+"\n")
+
+	print "same, with_greater, without_greater",same,with_greater,without_greater
 
 
 
