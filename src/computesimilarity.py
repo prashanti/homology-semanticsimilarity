@@ -58,7 +58,7 @@ def getsimilarityold(profile1,profile2,termic,ancestors,termtermsimilarity,termt
 
 
 def loadancestors(experimentno):
-	parentshomology=open("../data/"+experimentno+"/ParentsWithHomology.txt")
+	parentshomology=open("../data/"+experimentno+"/SubsumersWithHomology.txt")
 	ancestorswith=dict()
 	ancestorswithout=dict()
 
@@ -71,7 +71,7 @@ def loadancestors(experimentno):
 		if "With" in parent:
 			ancestorswith[child].add(parent)
 
-	parentsnohomology=open("../data/"+experimentno+"/ParentsWithoutHomology.txt")
+	parentsnohomology=open("../data/"+experimentno+"/SubsumersWithoutHomology.txt")
 	
 	for line in parentsnohomology:
 		data=line.replace("<http://purl.obolibrary.org/obo/","").replace(">","").split("\t")
@@ -87,9 +87,7 @@ def loadancestors(experimentno):
 	return ancestorswith,ancestorswithout
 
 
-def getorthologpairs(geneset):
-	datafile=open("../data/gene-orthologs.txt",'r')
-	orthologpairs=[]
+def getorthologpairs(geneset,datafile,orthologpairs):
 	for line in datafile:
 		line=line.replace("NCBIGene_","NCBI_gene:")
 		gene1=line.split("\t")[0]
@@ -108,16 +106,17 @@ def prepareCorpusforIC(ancestorswith,ancestorswithout):
 	annotationfile=open("../data/AnnotationCorpus.txt")
 	outfile=open("../data/GeneAnnotationDataset.txt",'w')
 	for line in annotationfile:
-		data=line.split("\t")
-		gene=data[0].strip()
-		geneset.add(gene)
-		annotation=data[1].strip().replace(":","_")
-		if gene not in geneannotations:
-			geneannotations[gene]=set()
-		for anc in ancestorswith[annotation]:
-			geneannotations[gene].add(anc)
-		for anc in ancestorswithout[annotation]:
-			geneannotations[gene].add(anc)
+		if "phenotype" not in line:
+			data=line.split("\t")
+			gene=data[0].strip()
+			geneset.add(gene)
+			annotation=data[1].strip().replace(":","_")
+			if gene not in geneannotations:
+				geneannotations[gene]=set()
+			for anc in ancestorswith[annotation]:
+				geneannotations[gene].add(anc)
+			for anc in ancestorswithout[annotation]:
+				geneannotations[gene].add(anc)
 
 
 	for gene in geneannotations:
@@ -140,7 +139,7 @@ def prepareCorpusforIC(ancestorswith,ancestorswithout):
 
 def loadzfinprofiles():
 	zfinprofiles=dict()
-	zfin=open("../data/Dr-gene-to-phenotype-BF.txt",'r')
+	zfin=open("../data/Annotations/Dr-gene-to-phenotype-BF.txt")
 	for line in zfin:
 		gene=line.split("\t")[0].strip()
 		annotation=line.split("\t")[1].strip().replace(":","_")
@@ -152,8 +151,7 @@ def loadzfinprofiles():
 
 def loadmgiprofiles():
 	mgiprofiles=dict()
-
-	mgi=open("../data/Mm-gene-to-phenotype-BF.txt",'r')		
+	mgi=open("../data/Annotations/Mm-gene-to-phenotype-BF.txt")		
 	for line in mgi:
 		gene=line.split("\t")[0].strip()
 		annotation=line.split("\t")[1].strip().replace(":","_")
@@ -163,9 +161,22 @@ def loadmgiprofiles():
 	mgi.close()
 	return(mgiprofiles)
 
+def loadhumanprofiles():
+	humanprofiles=dict()
+	human=open("../data/Annotations/Hs-gene-to-phenotype.txt")		
+	for line in human:
+		gene=line.split("\t")[0].strip()
+		annotation=line.split("\t")[1].strip().replace(":","_")
+		if gene not in humanprofiles:
+			humanprofiles[gene]=set()
+		humanprofiles[gene].add(annotation)		
+	human.close()
+	return(humanprofiles)
+
+
 def main():
 	
-	experimentno=sys.argv[1]
+	experimentno="Experiment_"+sys.argv[1]
 	outfile=open("../results/"+experimentno+"/SimilarityScores.tsv",'w')
 	outfile.write("Gene1\tGene2\tBetter Similarity With Homology\tSimilarity With Homology\tLCS With Homology\tAnnotation Pair leading to best match\tCommon subsumer set\tSimilarity Without Homology\tLCS Without Homology\tAnnotation Pair leading to best match\tCommon subsumer set\t\n")
 	
@@ -173,27 +184,35 @@ def main():
 
 	ancestorswith,ancestorswithout=loadancestors(experimentno)
 	geneset,termic=prepareCorpusforIC(ancestorswith,ancestorswithout)
-	orthologpairs=getorthologpairs(geneset)
+	
+	# load ortholog pairs
+	orthologpairs=[]
+	datafile=open("../data/GeneOrthologs/Human_MGI_orthologs.tsv",'r')
+	orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)
+	datafile=open("../data/GeneOrthologs/Human_ZFIN_orthologs.tsv",'r')
+	orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)	
+	datafile=open("../data/GeneOrthologs/MGI_ZFIN_orthologs.tsv",'r')
+	orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)
+
 	#build profiles of genes
 	mgiprofiles=loadmgiprofiles()
 	zfinprofiles=loadzfinprofiles()
+	humanprofiles=loadhumanprofiles()
 
 	similaritywithhomology=dict()
 	similaritywithouthomology=dict()
-
 	lcswithhomology=dict()
 	lcswithouthomology=dict()
 	lcssetwithhomology=dict()
 	lcssetwithouthomology=dict()
 	comparingwithhomology=dict()
 	comparingwithouthomology=dict()
-
 	termtermsimilarity=dict()
 
 	for orthologpair in orthologpairs:
 		gene1=orthologpair[0]
 		gene2=orthologpair[1]
-	
+		print gene1,gene2
 		if gene1 not in similaritywithhomology:
 			similaritywithhomology[gene1]=dict()
 		if gene1 not in similaritywithouthomology:
@@ -214,8 +233,21 @@ def main():
 		if gene1 not in comparingwithhomology:
 			comparingwithhomology[gene1]=dict()
 
+		if gene1 in mgiprofiles:
+			profile1=mgiprofiles[gene1]
+		elif gene1 in zfinprofiles:
+			profile1=zfinprofiles[gene1]
+		else:
+			profile1=humanprofiles[gene1]		
+		
+		if gene2 in mgiprofiles:
+			profile2=mgiprofiles[gene2]
+		elif gene2 in zfinprofiles:
+			profile2=zfinprofiles[gene2]
+		else:
+			profile2=humanprofiles[gene2]
 
-		withhomologyic,withhomologylcs,withhomologylcsset,withhomologycomparing=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswith)
+		withhomologyic,withhomologylcs,withhomologylcsset,withhomologycomparing=getsimilarity(profile1,profile2,termic,ancestorswith)
 
 		lcswithhomology[gene1][gene2]=withhomologylcs
 		similaritywithhomology[gene1][gene2]= withhomologyic
@@ -224,7 +256,7 @@ def main():
 
 
 
-		withouthomologyic,withouthomologylcs,withhomologylcsset,withhomologycomparing=getsimilarity(mgiprofiles[gene1],zfinprofiles[gene2],termic,ancestorswithout)
+		withouthomologyic,withouthomologylcs,withhomologylcsset,withhomologycomparing=getsimilarity(profile1,profile2,termic,ancestorswithout)
 		lcswithouthomology[gene1][gene2]=withouthomologylcs
 		similaritywithouthomology[gene1][gene2]= withouthomologyic	
 		lcssetwithouthomology[gene1][gene2]=withhomologylcsset
