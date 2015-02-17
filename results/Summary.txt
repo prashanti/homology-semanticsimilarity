@@ -1,0 +1,30 @@
+Experiment_1 ZFIN MGI
+Same with and without homology, Better with homology, Better without homology 1257 37 0
+
+
+
+Experiment_1 ZFIN Human
+Same with and without homology, Better with homology, Better without homology 619 21 0
+
+
+
+Experiment_1 MGI Human
+Same with and without homology, Better with homology, Better without homology 2011 64 0
+
+
+
+Experiment_2 ZFIN MGI
+Same with and without homology, Better with homology, Better without homology 255 121 918
+
+
+
+Experiment_2 ZFIN Human
+Same with and without homology, Better with homology, Better without homology 164 67 409
+
+
+
+Experiment_2 MGI Human
+Same with and without homology, Better with homology, Better without homology 594 127 1354
+
+
+
