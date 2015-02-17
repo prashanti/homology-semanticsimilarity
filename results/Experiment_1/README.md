@@ -6,7 +6,6 @@
     * has\_part some (PATO:0000001 and inheres\_in some (E))
   * With Homology grouping classes
     *  has\_part some (PATO:0000001 and inheres\_in some (E or homologous\_to E)) 
-    *  has\_part some (PATO:0000001 and inheres\_in some (E))
 
 >Notation in SimilarityScores.tsv
  * Column 3 (Better Similarity With Homology	Similarity) 
