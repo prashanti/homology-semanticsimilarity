@@ -16,47 +16,6 @@ def getsimilarity(profile1,profile2,termic,ancestors):
 	return finalmaxic,finallcs,lcsset,comparing
 
 
-
-
-
-def getsimilarityold(profile1,profile2,termic,ancestors,termtermsimilarity,termtermlcs):
-	icscores=[]
-	finalmaxic=0
-	finallcs="None"
-	for term1 in profile1:
-		for term2 in profile2:
-			present=0
-			if term1 in termtermsimilarity: 
-				if term2 in termtermsimilarity[term1]:
-					icscores.append(termtermsimilarity[term1][term2])
-					present=1
-					if termtermsimilarity[term1][term2] >finalmaxic:
-						finalmaxic=termtermsimilarity[term1][term2]
-						finallcs=termtermlcs[term1][term2]
-
-			if present==0:
-				maxic=0
-				commonancestors=set.intersection(ancestors[term1],ancestors[term2])
-				for anc in commonancestors:
-					if termic[anc]>maxic:
-						maxic=termic[anc]
-						if termic[anc]>finalmaxic:
-							finalmaxic=termic[anc]
-							finallcs=anc
-							
-
-				icscores.append(maxic)
-
-				if term1 not in termtermsimilarity:
-					termtermsimilarity[term1]=dict()
-				if term2 not in termtermsimilarity:
-					termtermsimilarity[term2]=dict()					
-				termtermsimilarity[term1][term2]=maxic
-				termtermsimilarity[term2][term1]=maxic
-	
-	return max(icscores),termtermsimilarity
-
-
 def loadancestors(experimentno):
 	parentshomology=open("../data/"+experimentno+"/SubsumersWithHomology.txt")
 	ancestorswith=dict()
@@ -173,11 +132,27 @@ def loadhumanprofiles():
 	human.close()
 	return(humanprofiles)
 
+def loadorthologpairs(species1,species2,geneset,orthologpairs):
+	if "Human" in species1+species2 and "MGI" in species1+species2:
+		datafile=open("../data/GeneOrthologs/Human_MGI_orthologs.tsv",'r')
+		orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)
+		
+	
+	elif "Human" in species1+species2 and "ZFIN" in species1+species2:
+		datafile=open("../data/GeneOrthologs/Human_ZFIN_orthologs.tsv",'r')
+		orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)	
+	else:
+		datafile=open("../data/GeneOrthologs/MGI_ZFIN_orthologs.tsv",'r')
+		orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)
+	
+	return orthologpairs
 
 def main():
 	
 	experimentno="Experiment_"+sys.argv[1]
-	outfile=open("../results/"+experimentno+"/SimilarityScores.tsv",'w')
+	species1=sys.argv[2]
+	species2=sys.argv[3]
+	outfile=open("../results/"+experimentno+"/" +species1+"_"+species2+  "_SimilarityScores.tsv",'w')
 	outfile.write("Gene1\tGene2\tBetter Similarity With Homology\tSimilarity With Homology\tLCS With Homology\tAnnotation Pair leading to best match\tCommon subsumer set\tSimilarity Without Homology\tLCS Without Homology\tAnnotation Pair leading to best match\tCommon subsumer set\t\n")
 	
 	genegenelcs=dict()
@@ -187,13 +162,8 @@ def main():
 	
 	# load ortholog pairs
 	orthologpairs=[]
-	datafile=open("../data/GeneOrthologs/Human_MGI_orthologs.tsv",'r')
-	orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)
-	datafile=open("../data/GeneOrthologs/Human_ZFIN_orthologs.tsv",'r')
-	orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)	
-	datafile=open("../data/GeneOrthologs/MGI_ZFIN_orthologs.tsv",'r')
-	orthologpairs=getorthologpairs(geneset,datafile,orthologpairs)
-
+	orthologpairs=loadorthologpairs(species1,species2,geneset,orthologpairs)
+	
 	#build profiles of genes
 	mgiprofiles=loadmgiprofiles()
 	zfinprofiles=loadzfinprofiles()
