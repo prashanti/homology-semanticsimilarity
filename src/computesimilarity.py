@@ -258,8 +258,6 @@ def prepareCorpusforIC(ancestorswith,ancestorswithout):
 	for annotation in annotationgenecount:
 		geneoutfile.write(annotation+"\t"+str(annotationgenecount[annotation])+"\n")	
 		termic[annotation]=round((-math.log(float(annotationgenecount[annotation])/float(len(geneset))))/maxic,2)
-		if termic[annotation]>1:
-			print "Warning"
 			
 	geneoutfile.close()
 	outfile.close()
@@ -273,10 +271,20 @@ def loadzfinprofiles():
 		gene=line.split("\t")[0].strip()
 		annotation=line.split("\t")[1].strip().replace(":","_")
 		if gene not in zfinprofiles:
-			zfinprofiles[gene]=set()
+			zfinprofiles[gene]=set()	
 		zfinprofiles[gene].add(annotation)
 	zfin.close()
+	zfinprofiles=removeempty(zfinprofiles)
 	return(zfinprofiles)
+def removeempty(profiles):
+	remove=set()
+	for gene in profiles:
+		if len(profiles[gene])==0:
+			remove.add(gene)
+
+	for gene in remove:
+		profiles.pop(gene,None)
+	return profiles
 
 def loadmgiprofiles():
 	mgiprofiles=dict()
@@ -286,9 +294,11 @@ def loadmgiprofiles():
 		annotation=line.split("\t")[1].strip().replace(":","_")
 		if gene not in mgiprofiles:
 			mgiprofiles[gene]=set()
-		mgiprofiles[gene].add(annotation)		
+		if "MP_0002169" not in annotation and "MP_0003012" not in annotation:
+			mgiprofiles[gene].add(annotation)		
 	mgi.close()
-	return(mgiprofiles)
+	mgiprofilesremoved=removeempty(mgiprofiles)
+	return(mgiprofilesremoved)
 
 def loadhumanprofiles():
 	humanprofiles=dict()
@@ -300,6 +310,7 @@ def loadhumanprofiles():
 			humanprofiles[gene]=set()
 		humanprofiles[gene].add(annotation)		
 	human.close()
+	humanprofiles=removeempty(humanprofiles)
 	return(humanprofiles)
 
 def loadorthologpairs(species1,species2,geneset,orthologpairs):
@@ -485,18 +496,18 @@ def summary(ap_maxicwith,ap_maxicwithout,ap_medianicwith,ap_medianicwithout,ap_m
 	#quantiles=rankdata(expectscores, "average")
 	
 	f,p=scipy.stats.ranksums(apmedianicwithlist,apmedianicwithoutlist)
-	print p
+	#print p
 	
 	f,p=scipy.stats.ranksums(apmediansimjwithlist,apmediansimjwithoutlist)
-	print p
+	#print p
 
 
 	f,p=scipy.stats.ranksums(bpmedianicwithlist,bpmedianicwithoutlist)
-	print p
+	#print p
 
 	
 	f,p=scipy.stats.ranksums(bpmediansimjwithlist,bpmediansimjwithoutlist)
-	print p		
+	#print p		
 
 def main():
 	
@@ -584,57 +595,59 @@ def main():
 
 		bp_maxsimjwith=addtodict(gene1,bp_maxsimjwith)
 		bp_maxsimjwithout=addtodict(gene1,bp_maxsimjwithout)
-
+		profile1=profile2=""
 		if gene1 in mgiprofiles:
 			profile1=mgiprofiles[gene1]
-		elif gene1 in zfinprofiles:
+		if gene1 in zfinprofiles:
 			profile1=zfinprofiles[gene1]
-		else:
+		if gene1 in humanprofiles:
 			profile1=humanprofiles[gene1]		
 		
+
 		if gene2 in mgiprofiles:
 			profile2=mgiprofiles[gene2]
-		elif gene2 in zfinprofiles:
+		if gene2 in zfinprofiles:
 			profile2=zfinprofiles[gene2]
-		else:
+		if gene2 in humanprofiles:
 			profile2=humanprofiles[gene2]
 
-		# With homology metrics
-		ap_maxicwith[gene1][gene2]=get_maxic(profile1,profile2,termic,ancestorswith)
-		ap_maxicwithout[gene1][gene2]=get_maxic(profile1,profile2,termic,ancestorswithout)
+		if len(profile1)>0 and len(profile2)>0:	
+			# With homology metrics
+			ap_maxicwith[gene1][gene2]=get_maxic(profile1,profile2,termic,ancestorswith)
+			ap_maxicwithout[gene1][gene2]=get_maxic(profile1,profile2,termic,ancestorswithout)
 
-		ap_medianicwith[gene1][gene2]=get_allpairs_medianic(profile1,profile2,termic,ancestorswith)
-		ap_medianicwithout[gene1][gene2]=get_allpairs_medianic(profile1,profile2,termic,ancestorswithout)
+			ap_medianicwith[gene1][gene2]=get_allpairs_medianic(profile1,profile2,termic,ancestorswith)
+			ap_medianicwithout[gene1][gene2]=get_allpairs_medianic(profile1,profile2,termic,ancestorswithout)
 
-		ap_mediansimjwith[gene1][gene2]=get_allpairs_medianjaccard(profile1,profile2,ancestorswith)
-		ap_mediansimjwithout[gene1][gene2]=get_allpairs_medianjaccard(profile1,profile2,ancestorswithout)
+			ap_mediansimjwith[gene1][gene2]=get_allpairs_medianjaccard(profile1,profile2,ancestorswith)
+			ap_mediansimjwithout[gene1][gene2]=get_allpairs_medianjaccard(profile1,profile2,ancestorswithout)
 
-		
+			
 
-		if ap_mediansimjwith[gene1][gene2] < ap_mediansimjwithout[gene1][gene2]:
-			1
-			#print "checking",gene1,gene2
-			#check_get_allpairs_medianjaccard(profile1,profile2,ancestorswith,ancestorswithout)
-
-
-		bp_medianicwith[gene1][gene2]=get_bestpairs_medianic(profile1,profile2,termic,ancestorswith)
-		bp_medianicwithout[gene1][gene2]=get_bestpairs_medianic(profile1,profile2,termic,ancestorswithout)
+			if ap_mediansimjwith[gene1][gene2] < ap_mediansimjwithout[gene1][gene2]:
+				1
+				#print "checking",gene1,gene2
+				#check_get_allpairs_medianjaccard(profile1,profile2,ancestorswith,ancestorswithout)
 
 
-		bp_maxicwith[gene1][gene2]=get_bestpairs_maxic(profile1,profile2,termic,ancestorswith)
-		bp_maxicwithout[gene1][gene2]=get_bestpairs_maxic(profile1,profile2,termic,ancestorswithout)
+			bp_medianicwith[gene1][gene2]=get_bestpairs_medianic(profile1,profile2,termic,ancestorswith)
+			bp_medianicwithout[gene1][gene2]=get_bestpairs_medianic(profile1,profile2,termic,ancestorswithout)
 
 
-		bp_mediansimjwith[gene1][gene2]=get_bestpairs_medianjaccard(profile1,profile2,ancestorswith)
-		bp_mediansimjwithout[gene1][gene2]=get_bestpairs_medianjaccard(profile1,profile2,ancestorswithout)
+			bp_maxicwith[gene1][gene2]=get_bestpairs_maxic(profile1,profile2,termic,ancestorswith)
+			bp_maxicwithout[gene1][gene2]=get_bestpairs_maxic(profile1,profile2,termic,ancestorswithout)
 
 
-		bp_maxsimjwith[gene1][gene2]=get_bestpairs_maxjaccard(profile1,profile2,ancestorswith)
-		bp_maxsimjwithout[gene1][gene2]=get_bestpairs_maxjaccard(profile1,profile2,ancestorswithout)
+			bp_mediansimjwith[gene1][gene2]=get_bestpairs_medianjaccard(profile1,profile2,ancestorswith)
+			bp_mediansimjwithout[gene1][gene2]=get_bestpairs_medianjaccard(profile1,profile2,ancestorswithout)
+
+
+			bp_maxsimjwith[gene1][gene2]=get_bestpairs_maxjaccard(profile1,profile2,ancestorswith)
+			bp_maxsimjwithout[gene1][gene2]=get_bestpairs_maxjaccard(profile1,profile2,ancestorswithout)
 
 
 
-		outfile.write(gene1+"\t"+gene2+"\t"+  str(ap_medianicwith[gene1][gene2])    +"\t"+  str(ap_medianicwithout[gene1][gene2])+"\t"+ str(ap_mediansimjwith[gene1][gene2])    +"\t"+  str(ap_mediansimjwithout[gene1][gene2])+"\t"+   str(bp_medianicwith[gene1][gene2])   +"\t"+  str(bp_medianicwithout[gene1][gene2]) +"\t"+ str(bp_mediansimjwith[gene1][gene2])  +"\t"+str(bp_mediansimjwithout[gene1][gene2])+ "\n")
+			outfile.write(gene1+"\t"+gene2+"\t"+  str(ap_medianicwith[gene1][gene2])    +"\t"+  str(ap_medianicwithout[gene1][gene2])+"\t"+ str(ap_mediansimjwith[gene1][gene2])    +"\t"+  str(ap_mediansimjwithout[gene1][gene2])+"\t"+   str(bp_medianicwith[gene1][gene2])   +"\t"+  str(bp_medianicwithout[gene1][gene2]) +"\t"+ str(bp_mediansimjwith[gene1][gene2])  +"\t"+str(bp_mediansimjwithout[gene1][gene2])+ "\n")
 
 	summary(ap_maxicwith,ap_maxicwithout,ap_medianicwith,ap_medianicwithout,ap_mediansimjwith,ap_mediansimjwithout, bp_maxicwith,bp_maxicwithout,bp_medianicwith,bp_medianicwithout,bp_maxsimjwith,bp_maxsimjwithout,bp_mediansimjwith,bp_mediansimjwithout)
 
