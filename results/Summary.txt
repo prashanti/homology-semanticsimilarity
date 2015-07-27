@@ -1,33 +1,34 @@
-Experiment_3 ZFIN MGI
-AP_MedianIC,better, same, worse  34.3176376696 65.6823623304 0.0
-AP_MedianSimJ,better, same, worse  72.9449321628 5.02793296089 22.0271348763
-BP_MedianIC,better, same, worse  40.2234636872 59.7765363128 0.0
-BP_MedianSimJ,better, same, worse  71.4285714286 1.35674381484 27.2146847566
-Improvement AP Median IC 50.0
-Improvement BP Median IC 6.66666666667
-Improvement AP Median SimJ 8.26906328552
-Improvement BP Median SimJ 6.24205053023
+Zebrafish vs Mouse
+
+AP IC, Increased, Unchanged, Decreased  34.3176376696 65.6823623304 0.0
+AP SimJ, Increased, Unchanged, Decreased  72.9449321628 5.02793296089 22.0271348763
+BP IC, Increased, Unchanged, Decreased  40.2234636872 59.7765363128 0.0
+BP SimJ, Increased, Unchanged, Decreased  71.4285714286 1.35674381484 27.2146847566
+Percent Improvement AP IC 50.0
+Percent Improvement BP IC 6.66666666667
+Percent Improvement AP SimJ 8.26906328552
+Percent Improvement BP SimJ 6.24205053023
 
 
+Zebrafish vs Human
 
-Experiment_3 ZFIN Human
-AP_MedianIC,better, same, worse  30.3125 69.6875 0.0
-AP_MedianSimJ,better, same, worse  63.90625 10.625 25.46875
-BP_MedianIC,better, same, worse  45.0 55.0 0.0
-BP_MedianSimJ,better, same, worse  65.46875 2.8125 31.71875
-Improvement AP Median IC 50.0
-Improvement BP Median IC 6.7816091954
-Improvement AP Median SimJ 6.09756097561
-Improvement BP Median SimJ 4.85997454083
+AP IC, Increased, Unchanged, Decreased  30.3125 69.6875 0.0
+AP SimJ, Increased, Unchanged, Decreased  63.90625 10.625 25.46875
+BP IC, Increased, Unchanged, Decreased  45.0 55.0 0.0
+BP SimJ, Increased, Unchanged, Decreased  65.46875 2.8125 31.71875
+Percent Improvement AP IC 50.0
+Percent Improvement BP IC 6.7816091954
+Percent Improvement AP SimJ 6.09756097561
+Percent Improvement BP SimJ 4.85997454083
 
 
+Mouse vs Human
 
-Experiment_3 MGI Human
-AP_MedianIC,better, same, worse  27.581120944 72.418879056 0.0
-AP_MedianSimJ,better, same, worse  80.7276302852 10.2261553589 9.04621435595
-BP_MedianIC,better, same, worse  31.6617502458 68.3382497542 0.0
-BP_MedianSimJ,better, same, worse  77.2369714848 5.26057030482 17.5024582104
-Improvement AP Median IC 50.0
-Improvement BP Median IC 4.7619047619
-Improvement AP Median SimJ 8.0
-Improvement BP Median SimJ 4.45205479452
+AP IC, Increased, Unchanged, Decreased  27.581120944 72.418879056 0.0
+AP SimJ, Increased, Unchanged, Decreased  80.7276302852 10.2261553589 9.04621435595
+BP IC, Increased, Unchanged, Decreased  31.6617502458 68.3382497542 0.0
+BP SimJ, Increased, Unchanged, Decreased  77.2369714848 5.26057030482 17.5024582104
+Percent Improvement AP IC 50.0
+Percent Improvement BP IC 4.7619047619
+Percent Improvement AP SimJ 8.0
+Percent Improvement BP SimJ 4.45205479452
