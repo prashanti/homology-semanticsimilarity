@@ -488,7 +488,18 @@ def randomize_nonortholog_pairs(orthologpairs):
 			print "Existing pair"
 	return nonorthologpairs
 
-
+def load_non_ortholog_pairs_asreal(species1,species2):
+	filename="../results/Nonorthologs_"+species1+"_"+species2+"_SimilarityScores.tsv"
+	filename=filename.replace("ZFIN","Zebrafish").replace("MGI","Mouse")
+	print filename
+	infile=open(filename)
+	nonorthologpairs=[]
+	for line in infile:
+		if "Gene1" not in line:
+			data=line.split("\t")
+			gene1,gene2=data[0],data[1]
+			nonorthologpairs.append((gene1,gene2))
+	return nonorthologpairs
 def main():
 	
 	experimentno="Experiment_"+sys.argv[1]
@@ -522,7 +533,8 @@ def main():
 	analyze(experimentno,species1,species2, orthologpairs,ancestorswith,ancestorswithout,outfilename,mgiprofiles,zfinprofiles,humanprofiles,termic)
 	
 
-	nonorthologpairs=load_non_ortholog_pairs(species1,species2,orthologpairs,orthologousgenes)
+	nonorthologpairs=load_non_ortholog_pairs_asreal(species1,species2)
+	
 	nonorthologfile=open("../data/Nonorthologs/"+"Nonothologs_"+species1+"_"+species2+".tsv",'w')
 	
 	for pair in nonorthologpairs:
